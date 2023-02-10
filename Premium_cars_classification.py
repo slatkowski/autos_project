@@ -131,7 +131,7 @@ print(df.columns)
 df.replace('andere', np.nan, inplace=True)
 
 '''14. The next operation is getting rid of outliers. We're taking into consideration only cars registered in the XXI 
-Century, with price in price bracket 200-55000 euros and engine power (in HP/PS) bracket 39 (HP of Fiat Seicento,
+Century, with price in price bracket 200-50000 euros and engine power (in HP/PS) bracket 39 (HP of Fiat Seicento,
 one of the less, if not the least powerful car available in XXI Century in Germany) to 500 (some of the brands have 
 more powerful models, but they are not common and can be considered as outliers).
 '''
