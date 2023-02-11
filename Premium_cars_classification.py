@@ -14,6 +14,7 @@ warnings.filterwarnings("ignore")
 
 url = 'https://raw.githubusercontent.com/slatkowski/autos_project/main/autos.csv'
 df = pd.read_csv(url)
+pd.options.display.max_columns = None
 print(df.head())
 print(df.tail())
 
@@ -73,15 +74,8 @@ appears as a median.'''
 description = df.describe().apply(lambda x: x.apply('{0:.2f}'.format))
 print(description)
 
-'''9. The next description of DataFrame - as we can see, NaNs have been replaced.
-We can assume that the columns used in prediction should have numeric values
-(except for column "nrOfPicture" in which we have only one value)
-and columns "vehicleType", "gearbox", "fuelType" and "postalCode"
-with values transformed into discrete numbers.'''
 
-print(df.info())
-
-'''10. Some of the premium brands are hidden behind the term "sonstige_autos". We have to "decode" that records.'''
+'''9. Some of the premium brands are hidden behind the term "sonstige_autos". We have to "decode" that records.'''
 
 lst = ['Ferrari', 'Maserati', 'Lexus', 'Aston', 'Bugatti', 'McLaren',
        'Acura', 'Royce', 'Bentley', 'Lamborghini', 'Tesla', 'Infiniti']
@@ -96,7 +90,7 @@ for i in lst:
         if i in name:
             df.loc[df['name'].str.contains(i), 'brand'] = 'Premium brand'
 
-'''11. Now we have to create two groups of brands (premium and other) instead of original car producers.'''
+'''10. Now we have to create two groups of brands (premium and other) instead of original car producers.'''
 
 lst = [(['volkswagen', 'opel', 'ford', 'renault',
          'peugeot', 'fiat', 'seat', 'mazda', 'skoda',
@@ -117,7 +111,7 @@ df['brand'] = df['brand'].replace(repl_dict)
 
 print(df['brand'].value_counts())
 
-'''12. Next we have to drop the columns with no importance in modelling.'''
+'''11. Next we have to drop the columns with no importance in modelling.'''
 
 df.drop(columns=['dateCrawled', 'name', 'seller', 'offerType', 'abtest',
                  'model', 'monthOfRegistration', 'notRepairedDamage',
@@ -125,12 +119,11 @@ df.drop(columns=['dateCrawled', 'name', 'seller', 'offerType', 'abtest',
 
 print(df.columns)
 
-'''13. Replacing hidden missing values as NaN-s (in German: "andere" - "other"  
-"sonstige autos" - "other cars").'''
+'''12. Replacing hidden missing values as NaN-s (in German: "andere" - "other").'''
 
 df.replace('andere', np.nan, inplace=True)
 
-'''14. The next operation is getting rid of outliers. We're taking into consideration only cars registered in the XXI 
+'''13. The next operation is getting rid of outliers. We're taking into consideration only cars registered in the XXI 
 Century, with price in price bracket 200-50000 euros and engine power (in HP/PS) bracket 39 (HP of Fiat Seicento,
 one of the less, if not the least powerful car available in XXI Century in Germany) to 500 (some of the brands have 
 more powerful models, but they are not common and can be considered as outliers).
@@ -140,27 +133,36 @@ df = df[(df['yearOfRegistration'] >= 2001) & (df['yearOfRegistration'] <= 2016)]
 df = df[(df['price'] >= 200) & (df['price'] <= 50000)]
 df = df[(df['powerPS'] >= 39) & (df['powerPS'] <= 500)]
 
-'''15. We can see that operations above made the dataset about two times smaller.
+'''14. We can see that operations above made the dataset about two times smaller.
 Number of samples decreased about two times.'''
 
 print(df.info())
 
-'''16. Now we have to balance classes - at first, let's count them.'''
+'''15. Classes numbers are not equal - class premium is almost two times less.'''
 
 print(df['brand'].value_counts())
 
-'''17. Premium brands are less numerous.
-To make our model more sensible to both class and metrics intuitive,
-we have to make quantity of adverts in brands equal.'''
 
-min_cnt = df['brand'].value_counts().min()
-df = df.groupby('brand').sample(min_cnt)
+'''16. Missing values still appear in columns referring to vehicle type, gearbox and type of fuel.'''
 
-print(df['brand'].value_counts())
+plt.figure(figsize=(10, 6))
+sns.displot(
+    data=df.isna().melt(value_name="missing"),
+    y="variable",
+    hue="missing",
+    multiple="fill",
+    aspect=1.25
+)
 
-'''18. To replace NaNs with values we should define a function
-which replaces them with values according to probability of their appearance
+plt.show()
+
+'''17. Columns with missing values have object (string) values inside.
+To replace NaNs with values we should define a function which replaces them
+with values according to probability of their appearance
 in the column where NaNs appear.'''
+
+from collections import Counter
+import random
 
 
 def nanfiller(frame):
@@ -171,8 +173,6 @@ def nanfiller(frame):
         # 3. taking values from column with no NaN and assigning them to a temporary Series
         nnan_c = series[series.notna()]
         # 4. counting not-NaN values from temporary Series
-        from collections import Counter
-        import random
         count_nn = Counter(nnan_c)
         # 5. choosing random values according to probabilities of their appearance
         new_val = random.choices(list(count_nn.keys()), weights=list(count_nn.values()), k=nan_c)
@@ -187,10 +187,11 @@ def nanfiller(frame):
 
 nanfiller(df)
 
-'''19. To transform columns with strings into categorical,
+'''18. To transform columns with strings into categorical,
 we'll define function based on LabelEncoder.'''
 
 from sklearn.preprocessing import LabelEncoder
+
 le = LabelEncoder()
 encode_list = ['gearbox', 'vehicleType', 'fuelType']
 
@@ -212,15 +213,14 @@ for i in encode_list:
     df[i] = encodingdesc(df[i], le)
     print('______________________')
 
-'''20. Last descriptions of basic statistics should show us that the data are ready to processing.'''
+'''19. Last descriptions of basic statistics should show us that the data are ready to processing.'''
 
+description = df.describe().apply(lambda x: x.apply('{0:.2f}'.format))
 print(description)
 
 print(df.info())
 
-'''21. To visualize values, we'll take the convention:
-- discrete values will be visualized by countplots,
-- to display continuous variable we'll use KDE Plot.
+'''20. To visualize values distributions, we'll use ECDF plots, because classes aren't balanced.
 
 Observations from discrete features plot:
 1. Nearly 50% of premium brands cars have automatic gearbox in equipment - when it comes to other brands,
@@ -242,15 +242,13 @@ are much more frequent.
 3. The biggest variance provides column "power PS". The biggest amount of non premium cars appear with power 
 not exceeding 150 HP/PS (peak at about 100 HP) and then number falls drastically.
 Premium cars more often have bigger power, exceeding even 400 HP (a little amount of non premium vehicles 
-have more than 250 PS).
-
-'''
+have more than 250 PS).'''
 
 sns.set(style="whitegrid")
 
 for i, col in enumerate(df[encode_list]):
     plt.figure(i)
-    ax = sns.countplot(x=col, data=df, hue='brand')
+    ax = sns.ecdfplot(x=col, data=df, hue='brand')
     sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
 
 plt.show()
@@ -258,13 +256,13 @@ plt.show()
 for i, col in enumerate(df[['price', 'yearOfRegistration',
                             'powerPS']]):
     plt.figure(i)
-    ax = sns.kdeplot(x=col, data=df, hue='brand', fill=True)
+    ax = sns.ecdfplot(x=col, data=df, hue='brand')
     sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
 
 plt.show()
 
-'''22. Analytic report shows that dependent variable has quite much correlation with variable "power". 
-None of the independent variables have big correlations between them, so there's no need to perform 
+'''21. Analytic report shows that dependent variable has quite much correlation with variable "power". 
+None of the independent variables have very big correlations between them, so there's no need to perform 
 feature extraction.
 Also there's no variable with distribution similar to normal. We can also observe that report sees a visible
 amount of duplicate rows, but it's probably due to the fact that some of the adverts refer to the similar car models.'''
@@ -272,7 +270,7 @@ amount of duplicate rows, but it's probably due to the fact that some of the adv
 report = ProfileReport(df, infer_dtypes=False)
 report.to_file('profile_report.html')
 
-'''23. Using a pivot table we can take a look at descriptive stats of each brand.
+'''22. Using a pivot table we can take a look at descriptive stats of each brand.
 Basing on mean, standard deviation and our previous observations we can see 
 that the variables providing the greatest variance are: fuel type, engine power, gearbox and price.'''
 
@@ -282,25 +280,48 @@ pivot = pd.pivot_table(df,
                                'yearOfRegistration', 'gearbox',
                                'powerPS', 'fuelType'],
                        aggfunc=[np.mean, np.median, np.std, min, max])
-pd.options.display.max_columns = None
 print(pivot)
 
-'''24. Now we can divide dataset to features (X) and labels (y).'''
+'''23. Dataset division to features (X) and labels (y).'''
 
-X = df.drop(columns='brand')
-y = df['brand']
+X = df.drop(columns='brand').values
+y = df['brand'].values
 
-'''25. As we can see below, division of the set ended successfully.'''
-print(X.sample(5))
-print(y.sample(5))
 
-'''26. Now we should encode brand names into categorical numbers.'''
+'''24. Now we should encode brand names into categorical numbers.'''
 
 y = le.fit_transform(y)
 print(y)
 print(type(y))
 
-'''27. We're going to need split the sets on training, validation and test via train_test_split method.'''
+'''25. Model creating demands solving a problem with classes imbalance. Keeping them in balance
+is absolutely necessary to make model more sensible to both class and metrics intuitive, but also
+we don't have to lose any samples.'''
+
+counter = Counter(y)
+print(counter)
+
+'''26. However, we can use data augmentation with a help of the SMOTE class from imblearn lib.
+SMOTE generates synthetic data for minority class. This algorithm is simple to explain and implement -
+- this technique creates artificial instances of smaller group by copying existing samples 
+and changing them a little.
+To illustrate this: it joins minor class points with the lines and places artificial points on these lines.'''
+
+
+from imblearn.over_sampling import SMOTE
+
+sm = SMOTE(random_state=42)
+X, y = sm.fit_resample(X, y)
+
+
+'''27. Classes are now balanced. It should make training more effective.'''
+
+
+counter = Counter(y)
+print(counter)
+
+
+'''28. We're going to need split the sets on training, validation and test via train_test_split method.'''
 
 from sklearn.model_selection import train_test_split
 
@@ -323,7 +344,7 @@ print(f'y_train shape: {y_train.shape}')
 print(f'y_val shape: {y_val.shape}')
 print(f'y_test shape: {y_test.shape}')
 
-'''28. Normalization of X sets using StandardScaler.'''
+'''29. Normalization of X sets using StandardScaler.'''
 
 from sklearn.preprocessing import StandardScaler
 
@@ -333,23 +354,24 @@ X_train_sc = scaler.fit_transform(X_train)
 X_val_sc = scaler.transform(X_val)
 X_test_sc = scaler.transform(X_test)
 
-'''29. Time for modelling. To solve classification problem we've chosen XGBClassifier.
+'''30. Time for modelling. To solve classification problem we've chosen XGBClassifier.
 It's efficient classifier which advantage is gradient boosting, using to improve the results of learning,
 basing on previous iteration faults.'''
 
 import xgboost as xgb
 
 xgb_model = xgb.XGBClassifier(
-    max_depth=10,  # depth of trees
-    n_estimators=500,  # no of trees/epochs - not too big to prevent overfitting
+    max_depth=9,  # depth of trees
+    n_estimators=300,  # no of trees/epochs - not too big to prevent overfitting
+    #not to small to let model fit efficiently
     learning_rate=0.1,
     # step size shrinkage - the next learning iteration should be smaller to prevent overfitting;
     # less value demands more iterations
     objective='binary:logistic',  # because it's binary classification issue, the objective couldn't be other
     eval_metric='error',  # measure of model learning progress and the base of possible early stopping
     gamma=0.05,  # minimum loss reduction required to make a further partition on a leaf node of the tree
-    reg_lambda=0.7,  # L2 regularization term
-    reg_alpha=0.05,  # L1 regularization term
+    reg_lambda=1,  # L2 regularization term
+    reg_alpha=0,  # L1 regularization term
     tree_method='approx'
     # the tree construction algorithm - approximate greedy algorithm using quantile sketch and gradient histogram
     # other params - default
@@ -368,7 +390,7 @@ mins = math.floor((stop - start) / 60)
 seconds = math.ceil((stop - start) % 60)
 print(f"Training time of XGBClassifier model: {mins} mins and {seconds} s.")
 
-'''30. Let's display metrics of model.'''
+'''31. Metrics of model are good - on each set over 90%. Let's display them.'''
 
 from sklearn.metrics import classification_report
 
@@ -380,13 +402,10 @@ print(f'Validation metrics:\n\n{classification_report(y_val, xgb_model_val_pred)
 print('_____________________________________________________\n')
 print(f'Test metrics:\n\n{classification_report(y_test, xgb_model_test_pred)}')
 
-'''31. Model's metrics are good - 92% on training, 90% on validation and on test set.
-We should also make plots showing the course of loss function for training and validation set and displaying, 
-at which iteration training was optimal.'''
+'''32. Model's metrics are good - over 90% on every set. We should also make plots showing the course
+of loss function for training and validation set and displaying, at which iteration training was optimal.'''
 
 results = xgb_model.evals_result()
-
-from sklearn.metrics import ConfusionMatrixDisplay
 
 plt.figure(figsize=(9, 8))
 plt.plot(results["validation_0"]["error"], label="Training loss")
@@ -397,11 +416,11 @@ plt.ylabel("Loss")
 plt.legend()
 plt.show()
 
-'''32. To visualize confusion matrix by heatmap, we'll create a function and call it for each set.'''
+'''33. To visualize confusion matrix by heatmap, we'll create a function and call it for each set.'''
 
 brands = le.classes_
 
-
+from sklearn.metrics import ConfusionMatrixDisplay
 def conf_matrix_show(estimator, prediction, truth, classes):
     # 1. Drawing the plot, setting the plot's default size.
     fig, ax = plt.subplots(figsize=(8, 8))
@@ -421,8 +440,9 @@ conf_matrix_show(xgb_model, X_train_sc, y_train, brands)
 conf_matrix_show(xgb_model, X_val_sc, y_val, brands)
 conf_matrix_show(xgb_model, X_test_sc, y_test, brands)
 
-'''33. At the end, let's random decision tree from estimators ensemble.'''
 
-fig, ax = plt.subplots(figsize=(50,50))
+'''34. At the end, let's random decision tree from estimators ensemble.'''
+
+fig, ax = plt.subplots(figsize=(50, 50))
 xgb.plot_tree(xgb_model, num_trees=1, rankdir='LR', ax=ax)
 plt.show()
