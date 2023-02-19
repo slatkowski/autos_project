@@ -40,8 +40,8 @@ df = load_dataset(filename=url)
 ''' Checking the adverts' publication time to make data filtering correct.
 We have to check when the first and the last advertisement have been published.'''
 
-print(f"Date of the first advertisement: {df['dateCreated'].min()}.")
-print(f"Date of the last advertisement: {df['dateCreated'].max()}.")
+print(f"Date of the first advertisement: {df['dateCrawled'].min()}.")
+print(f"Date of the last advertisement: {df['dateCrawled'].max()}.")
 
 ''' Setting index column if its values are unique.
 Columns "vehicleType", "gearbox", "model", "fuelType" and "notRepairedDamage" contain NaN values.

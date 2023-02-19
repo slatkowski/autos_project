@@ -26,6 +26,10 @@ pip install -r requirements.txt
 
 in command prompt.
 
+# Used data
+
+Data used in this project come from: https://www.kaggle.com/datasets/thedevastator/uncovering-factors-that-affect-used-car-prices.
+
 # License
 
 MIT.
