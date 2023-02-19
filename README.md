@@ -36,4 +36,4 @@ Jakub Walczak (https://github.com/jakubtwalczak)
 
 # Credits
 
-Special thanks to Szymon Łątkowski (https://github.com/slatkowski), who collaborated with me in the beginnings of the project's creation and with EDA of model.
+Special thanks to Szymon Łątkowski (https://github.com/slatkowski), who collaborated with me in the beginnings of the project's creation and cooperation with whom was fruitful and priceless.
