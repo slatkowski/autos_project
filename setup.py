@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='Premium_cars_classification',
-    version='4.0',
+    version='5.0',
     packages=[''],
     url='https://github.com/slatkowski/autos_project',
     license='MIT',
