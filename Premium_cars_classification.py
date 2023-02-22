@@ -242,6 +242,17 @@ Data are ready for processing now.'''
 description = df.describe().apply(lambda c: c.apply('{0:.2f}'.format))
 print(description)
 print(df.info())
+
+sns.displot(
+    data=df.isna().melt(value_name="missing"),
+    y="variable",
+    hue="missing",
+    multiple="fill",
+    aspect=1.5
+)
+
+plt.show()
+
 str_cols = df.select_dtypes(include='object')
 frame_counter(str_cols)
 
