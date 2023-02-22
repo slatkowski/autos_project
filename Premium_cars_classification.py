@@ -101,7 +101,7 @@ Some of the premium brands are hidden behind the term "sonstige_autos". We have 
 
 lst = ['ferrari', 'maserati', 'lexus', 'aston', 'bugatti', 'mclaren',
        'acura', 'royce', 'bentley', 'lamborghini', 'tesla', 'infiniti',
-       'hummer']
+       'hummer', 'mustang']
 
 df['name'] = df['name'].str.lower()
 
